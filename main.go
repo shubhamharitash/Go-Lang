@@ -4,7 +4,8 @@ package main
 import (
 	"Booking-app/helper"
 	"fmt"
-	"strings"
+	"sync"
+	"time"
 )
 
 // package-level variables
@@ -12,7 +13,18 @@ const conferenceTickets = 50
 
 var conferenceName = "Go-Lang"
 var remainingTickets uint = 50
-var bookings []string
+
+// var bookings = make([]map[string]string, 0)
+var bookings = make([]UserData, 0)
+
+// creating custom datatype using struct
+type UserData struct {
+	userName        string
+	email           string
+	numberOfTickets uint
+}
+
+var wg = sync.WaitGroup{}
 
 func main() {
 
@@ -26,6 +38,9 @@ func main() {
 		if isValidName && isValidEmail && isValidTicketNumber {
 
 			bookTicket(userTickets, userName, email)
+			//multithreading & concurrency in GO
+			wg.Add(1)
+			go sendTicket(userTickets, userName, email)
 
 			//call printFirstNames func
 			firstNames := getFirstNames()
@@ -55,6 +70,7 @@ func main() {
 		}
 
 	}
+	wg.Wait()
 
 }
 
@@ -67,8 +83,8 @@ func getFirstNames() []string {
 	firstNames := []string{}
 
 	for _, booking := range bookings {
-		var names = strings.Fields(booking)
-		firstNames = append(firstNames, names[0])
+		//var names = strings.Fields(booking)
+		firstNames = append(firstNames, booking.userName)
 	}
 	return firstNames
 }
@@ -94,10 +110,34 @@ func getUserInput() (string, uint, string) {
 
 func bookTicket(userTickets uint, userName string, email string) {
 	remainingTickets = remainingTickets - userTickets
-	bookings = append(bookings, userName)
+
+	//creating map for userData
+	//var userData = make(map[string]string)
+	//userData["userName"] = userName
+	//userData["email"] = email
+	//userData["numberOfTickets"] = strconv.FormatUint(uint64(userTickets), 10)
+
+	var userData = UserData{
+		userName:        userName,
+		email:           email,
+		numberOfTickets: userTickets,
+	}
+
+	bookings = append(bookings, userData)
 	fmt.Printf("Thank you %v for booking %v ticket. You will recieve confirmation email on %v \n", userName, conferenceName, email)
 	fmt.Printf("Tickets Remaining %v \n", remainingTickets)
+	fmt.Printf("List of Bookings is %v \n", bookings)
 
+}
+
+func sendTicket(userTickets uint, userName string, email string) {
+	time.Sleep(10 * time.Second)
+	//string formatting and storing in a variable
+	var ticket = fmt.Sprintf("%v tickets for %v ", userTickets, userName)
+	fmt.Println("*****************")
+	fmt.Printf("Sending Ticket:\n %v \n to email address %v\n", ticket, email)
+	fmt.Println("*****************")
+	wg.Done()
 }
 
 //arrays
